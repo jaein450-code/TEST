@@ -5,16 +5,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApp } from './server.js';
 import { todayInSeoul } from './public/model.js';
-test('staff restaurant and review sharing persists; anonymous access, forged ownership and invalid input are blocked', async t => {
-  const directory = mkdtempSync(join(tmpdir(), 'matzip-dining-')); let code, server, base;
-  const start = async () => { server = createApp({ directory, env: {}, sendMail: async (_, v) => { code = v; } }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
+test('public visitors share restaurants and reviews; browser ownership and restart persistence are preserved', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'matzip-dining-')); let server, base;
+  const start = async () => { server = createApp({ directory, env: {} }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
   await start();
   t.after(async () => { if (server.listening) await new Promise(r => server.close(r)); rmSync(directory, { recursive: true, force: true }); });
   const get = (path, cookie) => fetch(base + path, { headers: cookie ? { Cookie: cookie } : {} });
   const post = (path, data, cookie, origin = base) => fetch(base + path, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(data) });
-  const login = async email => { assert.equal((await post('/api/auth/request', { email })).status, 200); const response = await post('/api/auth/verify', { email, code }); return response.headers.get('set-cookie').split(';')[0]; };
-  for (const path of ['/api/dining', '/api/dining/restaurants', '/api/dining/reviews']) { assert.equal((await get(path)).status, 401); assert.equal((await post(path, {})).status, 401); }
-  const alice = await login('alice@ontoinnovation.com'); const bob = await login('bob@ontoinnovation.com');
+  const visit = async () => (await get('/')).headers.get('set-cookie').split(';')[0];
+  assert.equal((await get('/api/dining')).status, 200);
+  const alice = await visit(), bob = await visit();
   let snapshot = await (await get('/api/dining', alice)).json(); assert.equal(snapshot.restaurants.length, 6); assert.deepEqual(snapshot.reviews, {}); assert.ok(snapshot.restaurants.every(r => r.demo));
   const r = { name: '테스트 전용 식당 <script>', area: '회사 인근', category: '한식', dish: '점심 정식', price: 10000, walkMinutes: 5, driveMinutes: null, groupSize: 10, parking: true, reservation: null, address: '경기도 화성시 동탄 테스트 주소', description: '통합 테스트용 데이터입니다.' };
   assert.equal((await post('/api/dining/restaurants', { ...r, price: -1 }, alice)).status, 400);
