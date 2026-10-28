@@ -1,0 +1,8 @@
+{
+  "name": "matzip-note",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.js", "dev": "node --watch server.js", "import:naver": "node scripts/import-naver.js", "build": "node scripts/build-preview.js", "test": "node --test --test-isolation=none" },
+  "engines": { "node": ">=22.13" }
+}

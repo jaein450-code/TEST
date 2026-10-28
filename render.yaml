@@ -1,0 +1,24 @@
+# Paid web service and persistent disk. Review pricing before creating resources.
+services:
+  - type: web
+    name: onto-dongtan-matzip
+    runtime: node
+    region: singapore
+    plan: starter
+    numInstances: 1
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data/matzip
+      - key: RESEND_API_KEY
+        sync: false
+      - key: AUTH_MAIL_FROM
+        sync: false
+    disk:
+      name: matzip-data
+      mountPath: /var/data
+      sizeGB: 1

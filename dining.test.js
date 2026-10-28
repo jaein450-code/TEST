@@ -1,0 +1,36 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createApp } from './server.js';
+import { todayInSeoul } from './public/model.js';
+test('staff restaurant and review sharing persists; anonymous access, forged ownership and invalid input are blocked', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'matzip-dining-')); let code, server, base;
+  const start = async () => { server = createApp({ directory, env: {}, sendMail: async (_, v) => { code = v; } }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
+  await start();
+  t.after(async () => { if (server.listening) await new Promise(r => server.close(r)); rmSync(directory, { recursive: true, force: true }); });
+  const get = (path, cookie) => fetch(base + path, { headers: cookie ? { Cookie: cookie } : {} });
+  const post = (path, data, cookie, origin = base) => fetch(base + path, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(data) });
+  const login = async email => { assert.equal((await post('/api/auth/request', { email })).status, 200); const response = await post('/api/auth/verify', { email, code }); return response.headers.get('set-cookie').split(';')[0]; };
+  for (const path of ['/api/dining', '/api/dining/restaurants', '/api/dining/reviews']) { assert.equal((await get(path)).status, 401); assert.equal((await post(path, {})).status, 401); }
+  const alice = await login('alice@ontoinnovation.com'); const bob = await login('bob@ontoinnovation.com');
+  let snapshot = await (await get('/api/dining', alice)).json(); assert.equal(snapshot.restaurants.length, 6); assert.deepEqual(snapshot.reviews, {}); assert.ok(snapshot.restaurants.every(r => r.demo));
+  const r = { name: '테스트 전용 식당 <script>', area: '회사 인근', category: '한식', dish: '점심 정식', price: 10000, walkMinutes: 5, driveMinutes: null, groupSize: 10, parking: true, reservation: null, address: '경기도 화성시 동탄 테스트 주소', description: '통합 테스트용 데이터입니다.' };
+  assert.equal((await post('/api/dining/restaurants', { ...r, price: -1 }, alice)).status, 400);
+  assert.equal((await post('/api/dining/restaurants', r, alice, 'https://attacker.example')).status, 403);
+  let response = await post('/api/dining/restaurants', { ...r, demo: true, id: 'forged' }, alice); assert.equal(response.status, 201); const registered = await response.json(); assert.equal(registered.demo, false); assert.notEqual(registered.id, 'forged');
+  const review = { restaurantId: registered.id, name: '동료', rating: 4, text: '<img src=x onerror=alert(1)> 맛있었어요', visitDate: todayInSeoul(), waitMinutes: 0, mealMinutes: 20, tags: ['재방문하고 싶어요', '빠르게 나와요'], author: 'bob@ontoinnovation.com', mine: false };
+  assert.equal((await post('/api/dining/reviews', { ...review, visitDate: '2099-01-01' }, alice)).status, 400);
+  assert.equal((await post('/api/dining/reviews', { ...review, restaurantId: 'missing' }, alice)).status, 404);
+  assert.equal((await post('/api/dining/reviews', review, alice)).status, 201);
+  assert.equal((await post('/api/dining/reviews', review, alice)).status, 409);
+  snapshot = await (await get('/api/dining', bob)).json();
+  const shared = snapshot.reviews[registered.id][0]; assert.equal(shared.mine, false); assert.equal(shared.text, review.text); assert.ok(!JSON.stringify(snapshot).includes('@ontoinnovation.com'));
+  assert.equal((await post('/api/dining/reviews/delete', { id: shared.id }, bob)).status, 404);
+  assert.equal((await post('/api/dining/reviews/delete', {}, alice)).status, 400);
+  await new Promise(r => server.close(r)); await start();
+  snapshot = await (await get('/api/dining', alice)).json(); assert.equal(snapshot.restaurants.length, 7); assert.equal(snapshot.reviews[registered.id][0].mine, true);
+  assert.equal((await post('/api/dining/reviews/delete', { id: shared.id }, alice)).status, 200);
+  assert.deepEqual((await (await get('/api/dining', bob)).json()).reviews, {});
+});
