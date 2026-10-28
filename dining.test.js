@@ -7,7 +7,7 @@ import { createApp } from './server.js';
 import { todayInSeoul } from './public/model.js';
 test('public visitors share restaurants and reviews; browser ownership and restart persistence are preserved', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'matzip-dining-')); let server, base;
-  const start = async () => { server = createApp({ directory, env: {} }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
+  const start = async () => { server = await createApp({ directory, env: {} }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
   await start();
   t.after(async () => { if (server.listening) await new Promise(r => server.close(r)); rmSync(directory, { recursive: true, force: true }); });
   const get = (path, cookie) => fetch(base + path, { headers: cookie ? { Cookie: cookie } : {} });

@@ -1,0 +1,16 @@
+# Free-tier web service with an external Neon database. No paid persistent disk.
+services:
+  - type: web
+    name: onto-dongtan-matzip-free
+    runtime: node
+    region: ohio
+    plan: free
+    numInstances: 1
+    buildCommand: npm ci --omit=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false

@@ -4,9 +4,10 @@
 
 ## 실행
 
-Node.js 24.19.0(`.node-version`)을 권장합니다. 별도 외부 패키지는 없습니다.
+Node.js 24.19.0(`.node-version`)을 권장합니다. 먼저 `npm ci`로 의존성을 설치합니다.
 
 ```sh
+npm ci
 npm run build
 npm start
 npm test
@@ -34,11 +35,15 @@ npm test
 
 공식 회사 로고는 아직 확보하지 못해 회사명을 텍스트로 표시합니다.
 
-## 영구 저장과 배포
+## 무료 서버와 Neon 저장
 
-[DEPLOY.md](DEPLOY.md)를 참고하세요. 운영 시 `NODE_ENV=production`과 HTTPS `PUBLIC_ORIGIN` 또는 Render의 `RENDER_EXTERNAL_URL`이 필요합니다. 브라우저 작성자 정보는 `$DATA_DIR/visitors.sqlite`, 매장·리뷰는 `$DATA_DIR/dining.sqlite`에 저장됩니다. DB는 웹에서 제공하지 않습니다. 기존 `auth.sqlite`가 있더라도 삭제·이관하지 않으며 새 앱은 사용하지 않습니다.
+[DEPLOY.md](DEPLOY.md)의 무료 배포 절차를 참고하세요. `DATABASE_URL`을 설정하면 방문자 구분·공개 맛집·리뷰·쓰기 요청 제한을 모두 PostgreSQL에 저장하며 로컬 디스크에 의존하지 않습니다. 운영 시 HTTPS `PUBLIC_ORIGIN` 또는 Render의 `RENDER_EXTERNAL_URL`이 필요합니다. `NODE_ENV=production`에서 DB 주소가 없으면 시작 전에 오류를 반환합니다. 기존 유료 SQLite 운영을 위해 명시적인 영구 `DATA_DIR`을 지정한 경우만 예외입니다.
 
-`render.yaml`은 유료 Starter 서버 1개와 영구 디스크 1GB를 정의합니다. 요금 확인 후 생성하세요. 메일 발송 서비스에 가입하거나 발신 도메인을 구매할 필요는 없습니다. 단일 서버 구성이고, 운영 DB 백업·복구와 공개 게시물 관리 정책은 별도로 준비해야 합니다.
+무료용 Blueprint는 **`render-free.yaml`**이며 `plan: free`, 디스크 없음, `DATABASE_URL` 입력 항목을 사용합니다. 기존 유료 `render.yaml`은 자동 동기화로 기존 디스크가 삭제되지 않도록 보존했습니다. 새 무료 배포에서는 기본 파일 대신 무료용 파일을 명시하거나 New Web Service에서 Free를 선택하세요. 실제 호스팅 제공자의 무료 한도 안에서만 무료이며 사용량·플랜을 확인해야 합니다.
+
+`DATABASE_URL`이 없는 로컬 개발에서는 기존 SQLite를 사용합니다. PostgreSQL과 SQLite 간 데이터는 자동 이관하지 않습니다. 실제 데이터가 있는 기존 서비스를 새 DB로 전환하기 전 백업·이관·복구 확인이 필요합니다. 테스트용 가상 데이터는 DB와 별도로 제공됩니다. 실제 Neon 원격 연결·Render 배포 완료는 아직 확인하지 못했습니다.
+
+PostgreSQL 동작은 PGlite의 로컬 PostgreSQL 엔진으로 검증하며, 이는 실제 Neon 네트워크 연결이나 비밀번호 검증을 대신하지 않습니다. Neon TLS는 인증서 검증을 유지합니다. PostgreSQL 요청 제한은 IP별 첫 요청에서 시작하는 10분 고정 구간에 최대 60회이며 동시 요청을 원자적으로 처리합니다.
 
 ## 정적 미리보기
 
@@ -46,7 +51,7 @@ npm test
 
 ## 네이버 식당 가져오기
 
-`npm run import:naver`는 검토 결과만 저장하고, `npm run import:naver -- --apply`는 수집이 성공한 경우 DB에 중복 없이 등록합니다. `DATA_DIR`에 검토 결과와 DB를 저장합니다.
+`npm run import:naver`는 검토 결과만 저장하고, `npm run import:naver -- --apply`는 수집이 성공한 경우 DB에 중복 없이 등록합니다. `DATABASE_URL`이 있으면 매장은 PostgreSQL에 등록하며, 없으면 `DATA_DIR`의 SQLite를 사용합니다. 검토용 JSON은 로컬 경로에 저장됩니다. PostgreSQL의 가져오기는 매장별 중복을 방지하며 중간 실패 시 일부 매장이 저장될 수 있으므로 보고된 결과를 확인하고 재실행하세요.
 
 현재 API HUB용 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`과 공식 지역 검색 요청 URL `NAVER_LOCAL_SEARCH_URL`이 필요합니다. `NAVER_API_PROVIDER` 기본값은 `apihub`이며 인증 화면에 나온 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY`를 사용합니다. 실제 API HUB 주소는 아직 문서 접근 차단으로 확인하지 못했습니다. `nmap://`나 관리 콘솔 주소를 넣지 마세요. 기존 개발자센터 키만 `NAVER_API_PROVIDER=legacy`로 사용합니다. 키는 소스·채팅에 입력하지 않습니다.
 

@@ -8,7 +8,7 @@ async function fixture(t, env = {}) {
   const root = mkdtempSync(join(tmpdir(), 'matzip-public-'));
   const directory = join(root, 'persistent', 'matzip');
   let server, base;
-  const start = async () => { server = createApp({ env: { ...env, DATA_DIR: directory } }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
+  const start = async () => { server = await createApp({ env: { ...env, DATA_DIR: directory } }); await new Promise(r => server.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${server.address().port}`; };
   await start();
   t.after(async () => { if (server.listening) await new Promise(r => server.close(r)); rmSync(root, { recursive: true, force: true }); });
   return {
@@ -38,7 +38,7 @@ test('public writes still reject cross-site requests, missing or forged ownershi
   assert.equal((await f.post('/api/dining/restaurants', {}, cookie)).status, 429);
 });
 test('production uses secure persistent visitor cookie and Render HTTPS origin', async t => {
-  assert.throws(() => createApp({ env: { NODE_ENV: 'production' } }), /HTTPS/);
+  await assert.rejects(createApp({ env: { NODE_ENV: 'production' } }), /HTTPS/);
   const f = await fixture(t, { NODE_ENV: 'production', RENDER_EXTERNAL_URL: 'https://matzip-test.onrender.com' });
   const home = await f.get('/'); const header = home.headers.get('set-cookie'); assert.match(header, /; Secure/);
   assert.ok(existsSync(join(f.directory, 'visitors.sqlite'))); assert.ok(existsSync(join(f.directory, 'dining.sqlite')));
