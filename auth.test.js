@@ -50,3 +50,25 @@ test('failed or unconfigured delivery cannot create a usable challenge', async t
   await assert.rejects(missing.auth.request('person@ontoinnovation.com', 'ip'), { status: 503 });
   assert.equal(mailTransport({ directory: '/unused', env: { NODE_ENV: 'production', AUTH_DEV_MAIL: '1' } }), null);
 });
+
+test('independent app sender sends one OTP only to the requesting corporate recipient', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'matzip-sender-'));
+  const deliveries = [];
+  const sender = '맛집노트 <login@verified-app.example>';
+  const sendMail = mailTransport({ directory, env: { NODE_ENV: 'production', AUTH_MAIL_FROM: sender, RESEND_API_KEY: 'fake-test-key' }, request: async (url, options) => {
+    assert.equal(url, 'https://api.resend.com/emails');
+    assert.equal(options.redirect, 'error');
+    const body = JSON.parse(options.body); assert.equal(body.from, sender); assert.equal(body.to.length, 1);
+    assert.ok(body.to[0].endsWith('@ontoinnovation.com')); assert.ok(body.text.includes(body.to[0]));
+    deliveries.push(body); return { ok: true };
+  } });
+  const auth = createAuth({ directory, sendMail, generateCode: () => '246810' });
+  t.after(() => { auth.close(); rmSync(directory, { recursive: true, force: true }); });
+  await auth.request('Person@ontoinnovation.com', 'ip');
+  assert.deepEqual(deliveries[0].to, ['person@ontoinnovation.com']);
+  assert.equal(auth.session(auth.verify('person@ontoinnovation.com', '246810')), 'person@ontoinnovation.com');
+  await auth.request('another@ontoinnovation.com', 'ip');
+  assert.deepEqual(deliveries[1].to, ['another@ontoinnovation.com']);
+  for (const email of ['outsider@example.com', 'a@ontoinnovation.com,b@ontoinnovation.com', 'a@ontoinnovation.com.attacker.com']) await assert.rejects(auth.request(email, 'ip'), { status: 400 });
+  assert.equal(deliveries.length, 2);
+});

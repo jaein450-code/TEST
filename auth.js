@@ -62,17 +62,17 @@ export function createAuth({ directory, sendMail, now = Date.now, generateCode =
     close() { db.close(); }
   };
 }
-export function mailTransport({ directory, env }) {
+export function mailTransport({ directory, env, request = fetch }) {
   if (env.NODE_ENV !== 'production' && env.AUTH_DEV_MAIL === '1') {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     return async (email, code) => writeFileSync(join(directory, 'development-mail.json'), JSON.stringify({ email, code, warning: 'Development only. Never serve this file over HTTP.' }), { mode: 0o600 });
   }
   if (!env.RESEND_API_KEY || !env.AUTH_MAIL_FROM) return null;
   return async (email, code) => {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST', signal: AbortSignal.timeout(15000),
+    const response = await request('https://api.resend.com/emails', {
+      method: 'POST', signal: AbortSignal.timeout(15000), redirect: 'error',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: env.AUTH_MAIL_FROM, to: [email], subject: '맛집노트 회사 이메일 인증번호', text: `인증번호: ${code}\n10분 이내에 입력해 주세요.\n본인이 요청하지 않았다면 이 메일을 무시하세요.` })
+      body: JSON.stringify({ from: env.AUTH_MAIL_FROM, to: [email], subject: '맛집노트 회사 이메일 인증번호', text: `맛집노트 가입·로그인을 위해 요청하신 인증번호입니다.\n\n인증번호: ${code}\n10분 이내에 입력해 주세요.\n수신 주소: ${email}\n\n이 메일은 맛집노트의 발신 주소에서 요청하신 회사 이메일로 전송되었습니다.\n본인이 요청하지 않았다면 이 메일을 무시하세요.` })
     });
     if (!response.ok) throw new Error('Mail delivery failed');
   };

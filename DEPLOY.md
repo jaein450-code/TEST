@@ -9,7 +9,7 @@
 1. Render에 로그인하고 GitHub 계정을 연결합니다.
 2. **New → Blueprint**에서 `jaein450-code/TEST` 저장소와 `main` 브랜치를 선택합니다. 저장소가 비공개라면 Render의 GitHub 앱에 이 저장소 읽기 권한을 부여해야 합니다.
 3. 감지된 웹 서비스·영구 디스크와 요금을 검토합니다.
-4. `RESEND_API_KEY`와 `AUTH_MAIL_FROM`을 Render의 보안 환경 변수 입력란에 설정합니다. API 키를 채팅이나 저장소에 입력하지 마세요. 발신 주소는 회사에서 승인하고 Resend에서 인증한 주소여야 합니다.
+4. `RESEND_API_KEY`와 `AUTH_MAIL_FROM`을 Render의 보안 환경 변수 입력란에 설정합니다. API 키를 채팅이나 저장소에 입력하지 마세요. 발신 주소는 운영자가 사용 권한을 가진 도메인에서 Resend 인증을 완료한 주소여야 합니다. 회사 도메인일 필요는 없으며 회사 이메일은 수신용으로만 사용합니다.
 5. 생성·배포한 뒤 Render가 제공하는 HTTPS 주소를 엽니다. `RENDER_EXTERNAL_URL`을 사용하므로 임시 배포 주소를 코드에 하드코딩하지 않습니다. 커스텀 도메인을 쓸 때만 `PUBLIC_ORIGIN=https://정식주소`를 추가합니다(끝 슬래시 없이).
 6. 메일 공급자의 발송 성공과 실제 회사 메일 수신을 확인한 뒤 인증번호를 입력합니다. 메일이 설정되지 않으면 로그인은 503 안내로 실패하며 인증을 우회하지 않습니다.
 
@@ -19,7 +19,7 @@ Blueprint가 지원되지 않는 계정이라면 새 Web Service에 같은 저�
 - Build: `npm run build` / Start: `npm start`
 - Health check: `/healthz`
 - Node: `.node-version`의 24.19.0
-- Environment: `NODE_ENV=production`, `DATA_DIR=/var/data/matzip`, 승인된 `RESEND_API_KEY`, `AUTH_MAIL_FROM`
+- Environment: `NODE_ENV=production`, `DATA_DIR=/var/data/matzip`, Resend의 `RESEND_API_KEY`와 앱 전용 발신 주소 `AUTH_MAIL_FROM`
 - Persistent disk: mount `/var/data`, size 1GB
 
 Render API 키/연결이 없으면 이 작업 환경에서 서비스 생성과 외부 URL 발급을 직접 실행할 수 없습니다. 이 문서는 배포 완료 증거가 아닙니다.
@@ -49,3 +49,12 @@ Render API 키/연결이 없으면 이 작업 환경에서 서비스 생성과 �
 - 이메일 소유 확인은 재직 여부 조회가 아닙니다. 퇴사 즉시 접근 차단에는 회사 SSO 또는 관리자 기능이 필요합니다.
 - 프록시 뒤의 요청은 공통 IP로 보일 수 있어 발송 요청의 IP 제한(시간당 20회)에 영향을 줍니다. 다수 직원 사용 전 신뢰할 수 있는 프록시 설정과 공유 IP 제한 정책을 검토해야 합니다.
 - SQLite 구성은 단일 서버용입니다. 여러 인스턴스로 확장하려면 공유 DB와 요청 제한 저장소로 옮겨야 합니다.
+
+## 발신 주소와 회사 수신 주소
+
+- `AUTH_MAIL_FROM`: 앱 운영자가 관리하는 별도 도메인의 발신 주소입니다. 예시 `맛집노트 <login@your-verified-app-domain.example>`를 그대로 쓰지 말고 실제 인증된 주소를 입력합니다.
+- `RESEND_API_KEY`: 위 발신 도메인에서 메일 발송이 가능한 Resend 키입니다. 네이버 키나 회사 메일 비밀번호를 넣지 않습니다.
+- 가입자가 입력하는 회사 이메일: 인증번호를 **받는 주소**입니다. 서버는 정확히 `@ontoinnovation.com`만 허용하며, 한 요청에서 입력된 수신자 한 명에게만 메일을 보냅니다. 가입 요청으로 발신 주소나 추가 수신자를 지정할 수 없습니다.
+- 운영자 소유의 별도 발신 도메인을 인증한다면 회사 도메인의 DNS나 Microsoft 365 발송 권한을 연결할 필요가 없습니다. 해당 별도 도메인을 관리하는 곳에서 Resend가 안내하는 DNS 인증이 필요합니다.
+- `onboarding@resend.dev`는 Resend 가입자 본인 대상 테스트 용도이므로 직원 가입용 발신 주소로 사용하지 않습니다. Netlify의 기본 사이트 주소는 소유한 메일 발신 도메인을 대신하지 않습니다.
+- 아직 실제 발신 도메인과 키를 배포 환경에 연결하거나 실메일 수신을 검증하지 않았습니다. 주소를 임의로 만들거나 인증을 우회하는 방식으로 진행하지 않습니다.

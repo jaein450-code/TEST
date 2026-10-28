@@ -9,8 +9,8 @@ $('#email-form').onsubmit = async e => {
   $('#auth-message').textContent = '인증번호를 발송하고 있습니다…';
   try {
     const email = $('#email').value.trim();
-    const result = await api('/api/auth/request', { email }); selectedEmail = email;
-    $('#auth-message').textContent = result.message; $('#code-form').hidden = false; $('#email').readOnly = true; $('#code').focus();
+    await api('/api/auth/request', { email }); selectedEmail = email;
+    $('#auth-message').textContent = `${email}로 인증번호를 보냈습니다. 별도 발신 주소로 전송되므로 스팸함도 확인해 주세요. 10분 이내에 입력해 주세요.`; $('#code-form').hidden = false; $('#email').readOnly = true; $('#code').focus();
     let remaining = 60; button.textContent = `${remaining}초 후 재발송`;
     const timer = setInterval(() => { remaining--; button.textContent = `${remaining}초 후 재발송`; if (!remaining) { clearInterval(timer); button.disabled = false; button.textContent = '인증번호 다시 받기'; } }, 1000);
   } catch (error) { $('#auth-message').textContent = error.message; button.disabled = false; }

@@ -3,7 +3,8 @@
 <header><div class="company-brand" aria-label="ONTO INNOVATION"><strong>ONTO</strong><span>INNOVATION</span></div><span class="brand-divider" aria-hidden="true"></span><a class="logo" href="./">맛집노트<span>●</span></a><span class="header-note">ONTO INNOVATION 직원 전용</span></header>
 <main class="auth-main"><section class="auth-card"><p class="eyebrow">ONTO INNOVATION · MEMBERS ONLY</p><h1>동탄에서 찾는<br>동료와의 한 끼.</h1><p class="intro">더퍼스트타워2차 근처 맛집을 함께 찾아보세요.<br>처음 인증하면 계정이 자동으로 만들어집니다.</p>
 <p><a class="office-map" href="/preview">가상 데이터로 맛집 화면 둘러보기 ↗</a></p>
-<p class="muted">@ontoinnovation.com 회사 이메일만 사용할 수 있습니다.</p>
-<form id="email-form"><label for="email">회사 이메일</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="name@ontoinnovation.com"><button class="primary" id="send-code">인증번호 받기</button></form>
-<form id="code-form" hidden><label for="code">이메일로 받은 6자리 인증번호</label><input id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required placeholder="000000"><button class="primary">인증하고 시작하기</button><button type="button" id="change-email" class="text-button">이메일 변경</button><p class="muted">인증번호는 10분간 유효합니다. 재발송은 1분 후 가능합니다.</p></form>
+<p class="muted">@ontoinnovation.com 회사 이메일로 받은 인증번호를 입력하면 가입됩니다.</p>
+<form id="email-form"><label for="email">인증번호를 받을 회사 이메일</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="name@ontoinnovation.com"><button class="primary" id="send-code">인증번호 받기</button></form>
+<p class="muted">요청하신 주소로만 인증번호를 보냅니다. 메일은 맛집노트의 별도 발신 주소에서 도착하며, 회사 메일 비밀번호는 필요하지 않습니다.</p>
+<form id="code-form" hidden><label for="code">회사 이메일로 받은 6자리 인증번호</label><input id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required placeholder="000000"><button class="primary">인증하고 시작하기</button><button type="button" id="change-email" class="text-button">이메일 변경</button><p class="muted">인증번호는 10분간 유효합니다. 재발송은 1분 후 가능합니다.</p></form>
 <p id="auth-message" role="status" aria-live="polite"></p><p class="muted">인증된 로그인은 8시간 동안 유지됩니다.</p></section></main><script src="./login.js" defer></script></body></html>

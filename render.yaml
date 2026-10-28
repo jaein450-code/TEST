@@ -16,6 +16,7 @@ services:
         value: /var/data/matzip
       - key: RESEND_API_KEY
         sync: false
+      # App sender on an operator-owned, Resend-verified domain. Recipients alone must be corporate.
       - key: AUTH_MAIL_FROM
         sync: false
     disk:
